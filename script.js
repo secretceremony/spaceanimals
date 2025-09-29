@@ -78,6 +78,14 @@ function startQuiz() {
     document.getElementById('quizPage').classList.remove('hidden');
     // menampilkan pertanyaan
     loadQuestion(currentQuestionIndex);
+    
+    // Play audio when user starts the quiz (user interaction)
+    const audio = document.querySelector("audio");
+    if (audio) {
+        audio.play().catch(error => {
+            console.log('Audio autoplay prevented:', error);
+        });
+    }
 }
 
 function startAbout() {
@@ -94,12 +102,23 @@ function loadQuestion(index) {
             const questionDiv = document.createElement('div');
             // menampilkan pertanyaan dari const
             questionDiv.classList.add('question');
-            questionDiv.innerHTML = `<p>${index + 1}. ${question.question}</p>`;
+            const questionParagraph = document.createElement('p');
+            questionParagraph.textContent = `${index + 1}. ${question.question}`;
+            questionDiv.appendChild(questionParagraph);
             // menampilkan pertanyaan dalam benntuk input radio dan memberikan value di setiap opsi
             // menampilkan jawabanan dari text
             question.answers.forEach(answer => {
                 const label = document.createElement('label');
-                label.innerHTML = `<input type="radio" name="q${index + 1}" value="${answer.value}"> ${answer.text}`;
+                
+                const radioInput = document.createElement('input');
+                radioInput.type = 'radio';
+                radioInput.name = `q${index + 1}`;
+                radioInput.value = answer.value;
+                
+                const answerText = document.createTextNode(` ${answer.text}`);
+                
+                label.appendChild(radioInput);
+                label.appendChild(answerText);
                 questionDiv.appendChild(label);
             });
             // The code is part of a loop that dynamically generates the answers-
@@ -146,24 +165,47 @@ function showResult() {
     let resultText, resultImage;
     const maxCount = Math.max(counts.a, counts.b, counts.c, counts.d);
 
-    //menampilkan hasil output yang didapat
-    if (counts.a === maxCount) {
+    //menampilkan hasil output yang didapat dengan tie-breaking logic
+    // Find all personality types with the maximum count
+    const maxTypes = [];
+    if (counts.a === maxCount) maxTypes.push('a');
+    if (counts.b === maxCount) maxTypes.push('b');
+    if (counts.c === maxCount) maxTypes.push('c');
+    if (counts.d === maxCount) maxTypes.push('d');
+    
+    // Use the first type in the tie (maintains original behavior for single max)
+    // but provides consistent tie-breaking for multiple max values
+    const selectedType = maxTypes[0];
+    
+    if (selectedType === 'a') {
         resultText = "You are a Commander!";
         resultImage = "images/1Commander.png"; 
-    } else if (counts.b === maxCount) {
+    } else if (selectedType === 'b') {
         resultText = "You are an Intellectual!";
         resultImage = "images/2Engineer.png"; 
-    } else if (counts.c === maxCount) {
+    } else if (selectedType === 'c') {
         resultText = "You are a Socializer!";
         resultImage = "images/3Pilot.png"; 
-    } else if (counts.d === maxCount) {
+    } else if (selectedType === 'd') {
         resultText = "You are a Challenger!";
         resultImage = "images/4Architect.png"; 
     }
 
     document.getElementById('quizPage').classList.add('hidden');
     document.getElementById('resultPage').classList.remove('hidden');
-    document.getElementById('result').innerHTML = `<p>${resultText}</p><img src="${resultImage}" alt="${resultText}">`;
+    
+    // Use safe DOM manipulation instead of innerHTML to prevent XSS
+    const resultElement = document.getElementById('result');
+    resultElement.innerHTML = ''; // Clear existing content
+    
+    const resultParagraph = document.createElement('p');
+    resultParagraph.textContent = resultText; // textContent prevents XSS
+    resultElement.appendChild(resultParagraph);
+    
+    const resultImg = document.createElement('img');
+    resultImg.src = resultImage;
+    resultImg.alt = resultText;
+    resultElement.appendChild(resultImg);
 }
 
 window.onload = () => {
@@ -176,5 +218,6 @@ window.onload = () => {
 window.addEventListener("DOMContentLoaded", event => {
     const audio = document.querySelector("audio");
     audio.volume = 0.2;
-    audio.play();
+    // Remove autoplay to comply with browser policies
+    // Audio will be played when user interacts with the page
   });
